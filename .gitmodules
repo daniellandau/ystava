@@ -1,0 +1,3 @@
+[submodule "iCalendar"]
+     path = iCalendar
+     url = git@github.com:daniellandau/iCalendar.git

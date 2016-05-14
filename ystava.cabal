@@ -1,0 +1,42 @@
+name:                ystava
+version:             0.1.0.0
+synopsis:            YS (Ylioppilaskunnan Soittajat) bot
+description:         Please see README.md
+homepage:            https://github.com/daniellandau/ystava
+license:             AGPL-3
+license-file:        LICENSE
+author:              Daniel Landau
+maintainer:          daniel@landau.fi
+copyright:           2016 Daniel Landau
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable ystava
+  default-extensions:  OverloadedStrings
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  other-modules:       Ai
+                     , Calendar
+                     , Telegram
+  build-depends:       base >= 4.7 && < 5
+                     , telegram-api
+                     , text
+                     , mtl
+                     , iCalendar
+                     , http-conduit
+                     , bytestring >= 0.10
+                     , data-default >= 0.5
+                     , containers
+                     , time
+                     , binary-tagged >= 0.1
+                     , binary
+                     , hnn
+                     , hmatrix
+                     , stemmer
+                     , tokenize
+                     , regex-posix
+                     , hstatistics
+                     , timezone-olson
+                     , timezone-series
