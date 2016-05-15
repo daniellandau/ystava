@@ -27,6 +27,7 @@ rawSamples =
   , ("Mitä kuuluu?", StaticResponse "Olen robotti, minulla on kivaa")
   , ("Hyvää päivää", StaticResponse "No moro moro")
   , ("Millaista on olla robotti?", StaticResponse "Olen robotti, minulla on kivaa")
+  , ("Kuka on hyvä pesemään ikkunoita?", StaticResponse "Kuulemma Selliina")
   ]
 
 corpus :: [String]
