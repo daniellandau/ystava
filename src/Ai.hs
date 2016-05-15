@@ -32,6 +32,10 @@ rawSamples =
   , ("Hyvää huomenta", StaticResponse "No moro moro")
   , ("Onko tänään kaunis ilma?", StaticResponse "Katso vaikka http://www.supersaa.fi/")
   , ("Lähdetkö uimaan?", StaticResponse "Mieluumin en")
+  , ("Millainen sää on huomenna?", StaticResponse "Katso vaikka http://www.supersaa.fi/")
+  , ("Millainen ilma on huomenna?", StaticResponse "Katso vaikka http://www.supersaa.fi/")
+  , ("Mkä on päivän sää?", StaticResponse "Katso vaikka http://www.supersaa.fi/")
+  , ("Millainen elämä on robotilla?", StaticResponse "Ihan kivaa")
   ]
 
 corpus :: [String]
