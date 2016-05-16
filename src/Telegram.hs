@@ -13,8 +13,9 @@ import Data.Maybe
 import Data.Binary.Tagged
 import Data.Binary (Binary)
 import GHC.Generics (Generic)
+import AI.HNN.FF.Network
 
-data Conf = Conf { _token :: Token, _icalUrl :: T.Text }
+data Conf = Conf { _token :: !Token, _icalUrl :: !T.Text, _username :: !T.Text, _net :: !(Network Double) }
 
 type Mystack a = ReaderT Conf (StateT MyState IO) a
 
@@ -51,8 +52,6 @@ loop = do
       log_ . show $ a
       loop
     Right UpdatesResponse { update_result = updates } -> do
-      log_ (show . length $ updates)
-      log_ (show offset)
       liftIO $ mapM_ (putStrLn . show) updates
       if length updates > 0
         then do
@@ -64,7 +63,7 @@ loop = do
 
 doOne :: Update -> Mystack Int
 doOne update = do
-  Conf { _token = token, _icalUrl = icalUrl } <- ask
+  Conf { _token = token, _icalUrl = icalUrl, _username = userName, _net = net} <- ask
   let userId = UserId . user_id . fromJust . from . fromJust . message $ update
   let chatId = ChatId . T.pack . show . chat_id . chat . fromJust . message $ update
   let chatType = chat_type . chat . fromJust . message $ update
@@ -79,21 +78,29 @@ doOne update = do
          return chatId
        else return . fromJust . _group $ cache
   isGoodUser <- isKnownGoodUser userId
+  let shouldListen' = shouldListen (isGroup chatType) (T.isInfixOf userName (maybe "" id textMaybe))
   let isGoodGroup = group == chatId
   _ <- if isGoodGroup || (not (isGroup chatType) && isGoodUser)
     then do
       _ <- if isGoodGroup && not isGoodUser then addUser userId else return ()
-      choice <- liftIO $ if (isGoodGroup && not (T.isInfixOf "@ystava" (maybe "" id textMaybe))) then return NoResponse else choose textMaybe
+      let choice = choose textMaybe net
       response <- case choice of
         NoResponse -> return ""
-        NextPractice -> liftIO $ LT.toStrict <$> getNextPractice icalUrl
+        NextPractice -> liftIO $ LT.toStrict <$> whenNextPractice icalUrl
         StaticResponse t -> return t
-      if T.length response > 0
+        WhereNextPractice -> liftIO $ LT.toStrict <$> whereNextPractice icalUrl
+      if T.length response > 0 && shouldListen'
         then liftIO $ sendMessage token (SendMessageRequest (toText chatId) response (Just Markdown) Nothing Nothing Nothing) >> return ()
         else liftIO . return $ ()
-    else liftIO $ sendMessage token (SendMessageRequest (toText chatId)
-                                     "Tämä botti on vain YStävien käyttöön. Puhu minulle YS-kanavalla (ja kun tunnemme toisemme myös yksityischätissä)" (Just Markdown) Nothing Nothing Nothing) >> return ()
+    else liftIO $ if shouldListen'
+                  then sendMessage token (SendMessageRequest (toText chatId)
+                                          "Tämä botti on vain YStävien käyttöön. Puhu minulle YS-kanavalla (ja kun tunnemme toisemme myös yksityischätissä)" (Just Markdown) Nothing Nothing Nothing) >> return ()
+                  else return ()
   return maxSeenOffset
+
+shouldListen :: Bool -> Bool -> Bool
+shouldListen isGroup' mentionsBot =
+  not isGroup' || mentionsBot
 
 isGroup :: ChatType -> Bool
 isGroup Group = True

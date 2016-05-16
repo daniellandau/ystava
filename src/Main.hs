@@ -1,5 +1,6 @@
 module Main where
 import Telegram
+import Ai
 import qualified Data.Text as T
 import System.Environment
 import Control.Monad.Reader
@@ -13,8 +14,10 @@ main = do
   putStrLn "start app"
   token <- maybe (error "Need TOKEN") (Token . T.pack) <$> lookupEnv "TOKEN"
   icalUrl <- maybe (error "Need ICAL_URL") T.pack <$> lookupEnv "ICAL_URL"
+  userName <- maybe (error "Need BOTUSERNAME") T.pack <$> lookupEnv "BOTUSERNAME"
   cache <- Ex.catch (taggedDecodeFile "cache") handleDefaultCache
-  _ <- runStateT (runReaderT loop $ Conf token icalUrl) (MyState cache 0)
+  net <- getNetwork
+  _ <- runStateT (runReaderT loop $ Conf token icalUrl userName net) (MyState cache 0)
   return ()
 
 handleDefaultCache :: SomeException -> IO Cache

@@ -8,8 +8,10 @@ import NLP.Tokenize.String
 import Text.Regex.Posix
 import Data.List
 import Data.Maybe
+import Control.Exception as Ex
+import Debug.Trace
 
-data Choice = NextPractice | StaticResponse T.Text | NoResponse deriving (Eq, Show)
+data Choice = WhereNextPractice | NextPractice | StaticResponse T.Text | NoResponse deriving (Eq, Show)
 
 analyze :: String -> [String]
 analyze sentence =
@@ -36,6 +38,10 @@ rawSamples =
   , ("Millainen ilma on huomenna?", StaticResponse "Katso vaikka http://www.supersaa.fi/")
   , ("Mkä on päivän sää?", StaticResponse "Katso vaikka http://www.supersaa.fi/")
   , ("Millainen elämä on robotilla?", StaticResponse "Ihan kivaa")
+  , ("missä harjoitukset?", WhereNextPractice)
+  , ("missä treenit?", WhereNextPractice)
+  , ("missä parhaat bileet?", StaticResponse "YStävien seurassa tietty!")
+  , ("missä on paras meno?", StaticResponse "YStävien seurassa tietty!")
   ]
 
 corpus :: [String]
@@ -65,16 +71,21 @@ answerToSample choice =
 samples :: Samples Double
 samples = map (\rawSample -> (toSample . fst $ rawSample, answerToSample . snd $ rawSample)) rawSamples
 
-choose :: Maybe T.Text -> IO Choice
-choose queryMaybe = do
+makeNetwork :: SomeException -> IO (Network Double)
+makeNetwork _ = do
   net <- createNetwork (length corpus) [60] (length answerCorpus)
-  let net' = trainNTimes 5000 0.8 sigmoid sigmoid' net samples
-  let result = maybe NoResponse (choose' net') queryMaybe
-  return result
+  return $ trainNTimes 5000 0.8 sigmoid sigmoid' net samples
+
+getNetwork :: IO (Network Double)
+getNetwork = Ex.catch (loadNetwork "network") makeNetwork
+
+choose :: Maybe T.Text -> Network Double -> Choice
+choose queryMaybe net =
+  maybe NoResponse (choose' net) queryMaybe
 
 choose' :: Network Double -> T.Text -> Choice
 choose' net query =
   let weights = output net sigmoid (toSample $ T.unpack query)
   in if maxElement weights > 0.9
      then answerCorpus !! maxIndex weights
-     else StaticResponse "No nyt en ihan ymmärtänyt 😞"
+     else traceShow weights $ StaticResponse "No nyt en ihan ymmärtänyt 😞"
